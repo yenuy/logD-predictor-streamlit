@@ -1,0 +1,13 @@
+model_path;model_name;ML_algorithm;property;RMSE;MAE;Q2;PEARSON
+SVR_complex3_chilogd026_13C_ML_input_trained_model.pkl;SVR_026_13C;SVR;CHI_logD_pH_2.6;0.6987;0.5084;0.6785;0.8257
+SVR_complex3_chilogd074_13C_ML_input_trained_model.pkl;SVR_074_13C;SVR;CHI_logD_pH_7.4;0.6091;0.4352;0.5926;0.7750
+SVR_complex3_chilogd105_13C_ML_input_trained_model.pkl;SVR_105_13C;SVR;CHI_logD_pH_10.5;0.6922;0.5204;0.5958;0.7739
+XGB_complex3_chilogd026_13C_ML_input_trained_model.pkl;XGB_026_13C;XGB;CHI_logD_pH_2.6;0.6329;0.4731;0.7499;0.8680
+XGB_complex3_chilogd074_13C_ML_input_trained_model.pkl;XGB_074_13C;XGB;CHI_logD_pH_7.4;0.5848;0.4375;0.6552;0.8124
+XGB_complex3_chilogd105_13C_ML_input_trained_model.pkl;XGB_105_13C;XGB;CHI_logD_pH_10.5;0.7201;0.5153;0.5730;0.7581
+CNN_complex3_chilogd026_13C_ML_input_model.pth;CNN_026_13C;CNN;CHI_logD_pH_2.6;0.6244;0.4559;0.7177;0.8583
+CNN_complex3_chilogd074_13C_ML_input_model.pth;CNN_074_13C;CNN;CHI_logD_pH_7.4;0.5816;0.4293;0.6578;0.8175
+CNN_complex3_chilogd105_13C_ML_input_model.pth;CNN_105_13C;CNN;CHI_logD_pH_10.5;0.7188;0.5078;0.5806;0.7725
+DNN_complex3_chilogd026_13C_ML_input_final_model.pth;DNN_026_13C;DNN;CHI_logD_pH_2.6;0.6356;0.4662;0.7077;0.8512
+DNN_complex3_chilogd074_13C_ML_input_final_model.pth;DNN_074_13C;DNN;CHI_logD_pH_7.4;0.5871;0.4338;0.6519;0.8137
+DNN_complex3_chilogd105_13C_ML_input_final_model.pth;DNN_105_13C;DNN;CHI_logD_pH_10.5;0.7169;0.5123;0.5810;0.7704
