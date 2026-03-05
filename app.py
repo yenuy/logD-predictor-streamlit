@@ -1,6 +1,6 @@
 """
-logD Predictor - Streamlit 版本
-修复模型加载和路径问题
+logD Predictor - Streamlit Cloud 版本
+修复版本
 """
 import streamlit as st
 import pandas as pd
@@ -12,6 +12,12 @@ import os
 import time
 warnings.filterwarnings('ignore')
 
+# 修复路径问题
+BASE_DIR = Path(__file__).parent
+SRC_DIR = BASE_DIR / 'src'
+if SRC_DIR.exists():
+    sys.path.insert(0, str(SRC_DIR))
+
 # 页面配置
 st.set_page_config(
     page_title="logD Predictor",
@@ -19,6 +25,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# 模型配置
+MODELS_DIR = BASE_DIR / "joblib_models"
 
 # CSS 样式
 st.markdown("""
@@ -38,28 +47,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 模型配置 - 使用绝对路径
-BASE_DIR = Path(__file__).parent
-MODELS_DIR = BASE_DIR / "joblib_models"
-
-# 确保模型目录存在
-MODELS_DIR.mkdir(exist_ok=True)
-
-# 导入模块
+# 导入模块（带详细错误处理）
+IMPORT_ERROR = None
 try:
-    # 添加 src 到路径
-    src_dir = BASE_DIR / "src"
-    if src_dir.exists():
-        sys.path.insert(0, str(src_dir))
-    
     from src.model_manager import ModelManager
     from src.feature_generator import FeatureGenerator
     from src.predictors import PredictorManager
     from src.utils import validate_smiles
     IMPORT_SUCCESS = True
 except ImportError as e:
-    st.error(f"❌ 模块导入失败：{e}")
+    IMPORT_ERROR = str(e)
     IMPORT_SUCCESS = False
+    st.error(f"❌ 模块导入失败：{e}")
     st.info("💡 请确保 src 目录存在且包含必要的模块文件")
 
 # 缓存函数
@@ -75,52 +74,46 @@ def get_feature_generator():
 def get_predictor_manager():
     return PredictorManager()
 
-# 检查模型 - 修复版本
+# 检查模型
 def check_models():
-    """检查模型文件是否存在"""
     if not MODELS_DIR.exists():
         return False, "模型目录不存在"
     
-    # 查找所有支持的模型文件
-    joblib_files = list(MODELS_DIR.glob("*.joblib"))
-    pth_files = list(MODELS_DIR.glob("*.pth"))
-    pkl_files = list(MODELS_DIR.glob("*.pkl"))
+    files = (list(MODELS_DIR.glob("*.joblib")) + 
+             list(MODELS_DIR.glob("*.pth")) + 
+             list(MODELS_DIR.glob("*.pkl")))
     
-    total_files = len(joblib_files) + len(pth_files) + len(pkl_files)
+    if len(files) == 0:
+        return False, f"未找到模型文件（在 {MODELS_DIR} 中）"
     
-    if total_files == 0:
-        return False, "未找到模型文件 (.joblib, .pth, .pkl)"
-    
-    return True, f"找到 {total_files} 个模型文件"
+    return True, f"找到 {len(files)} 个模型文件"
 
 # 侧边栏
 with st.sidebar:
     st.title("⚙️ 配置")
     
-    # 显示当前路径信息（用于调试）
-    with st.expander("📁 路径信息"):
-        st.write(f"**当前目录**: `{BASE_DIR}`")
+    # 显示路径信息
+    with st.expander("📁 路径信息", expanded=True):
+        st.write(f"**应用目录**: `{BASE_DIR}`")
+        st.write(f"**SRC目录**: `{SRC_DIR}`")
+        st.write(f"**SRC存在**: {SRC_DIR.exists()}")
         st.write(f"**模型目录**: `{MODELS_DIR}`")
         st.write(f"**模型目录存在**: {MODELS_DIR.exists()}")
         
-        if MODELS_DIR.exists():
-            files = list(MODELS_DIR.iterdir())
-            st.write(f"**文件数量**: {len(files)}")
-            if files:
-                st.write("**文件列表**:")
-                for f in files[:10]:  # 只显示前10个
-                    st.write(f"  - {f.name}")
+        if SRC_DIR.exists():
+            st.write("**SRC文件**:")
+            for f in SRC_DIR.glob("*.py"):
+                st.write(f"  - {f.name}")
     
-    # 检查模型
     models_ready, msg = check_models()
     
     if models_ready:
         st.success(f"✅ {msg}")
         if st.button("🗑️ 清除缓存"):
             import shutil
-            import gc
+            if MODELS_DIR.exists():
+                shutil.rmtree(MODELS_DIR)
             st.cache_resource.clear()
-            gc.collect()
             st.rerun()
     else:
         st.warning(f"⚠️ {msg}")
@@ -146,12 +139,11 @@ with st.sidebar:
 st.markdown('<p class="main-header">🧪 logD Predictor</p>', unsafe_allow_html=True)
 st.markdown('<p style="text-align: center; font-size: 1.2rem;">预测化合物的 CHI logD 值</p>', unsafe_allow_html=True)
 
-# 如果没有导入成功，显示错误并停止
+# 检查导入和模型状态
 if not IMPORT_SUCCESS:
     st.error("❌ 无法导入必要的模块，请检查 src 目录结构")
     st.stop()
 
-# 如果模型未就绪，显示提示并停止
 if not models_ready:
     st.markdown("""
     <div class="download-box">
@@ -239,10 +231,8 @@ with tab1:
                                 st.download_button("📥 下载", csv, "result.csv", "text/csv")
                             else:
                                 st.warning("⚠️ 无结果")
-                        else:
-                            st.error("❌ 特征生成失败")
                     except Exception as e:
-                        st.error(f"❌ 错误：{e}")
+                        st.error(f"错误：{e}")
                         st.exception(e)
 
 with tab2:
@@ -291,12 +281,10 @@ with tab2:
                     st.dataframe(df_r, use_container_width=True)
                     csv = df_r.to_csv(index=False).encode('utf-8')
                     st.download_button("📥 下载", csv, "batch_result.csv", "text/csv")
-                else:
-                    st.warning("⚠️ 无结果")
         except Exception as e:
-            st.error(f"❌ 错误：{e}")
+            st.error(f"错误：{e}")
             st.exception(e)
 
 # 页脚
 st.divider()
-st.markdown('<p style="text-align: center; color: #666;">logD Predictor v1.0 | Streamlit</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #666; font-size: 0.9em;">logD Predictor v1.0 | Streamlit</p>', unsafe_allow_html=True)
